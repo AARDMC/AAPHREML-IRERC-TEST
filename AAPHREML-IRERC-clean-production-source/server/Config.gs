@@ -14,10 +14,10 @@ var CFG = {
   TIMEZONE: 'Africa/Addis_Ababa',
 
   // Set these to institution-owned resources before initializing or deploying.
-  DB_SS_ID:          '1STOWsef_1jO9wyA1SDjl27fwCNZso7t_2Txqctr96sw',
+  DB_SS_ID:          '1LULDYhLpWwBnyqMEVKL2IoMT3vf3C83BXyuAi_8lw1Q',
   ROOT_FOLDER_NAME:  'AAPHREML-IRERC_Documents',
-  SHEET_ID:          '1VAOLsmapTnKXtVnONO_O-ZH4H7_KsvQ2VZjTpfH6_dM',
-  FOLDER_ID:         '1lx0-ws8XFPUzMmc4s31UKfHUyYNfdoch',
+  SHEET_ID:          '1a5wErdcvrX5thXyDqb-VbR3buXglpU_JN_a0uufsJr8',
+  FOLDER_ID:         'https://drive.google.com/drive/folders/1I6iOg-GCw9lMFlA6Ygbgw83RbNcl3PBA',
 
   // GitHub Pages URL for your deployment — update to match your username/repo
   // Example: 'https://YOUR-USERNAME.github.io/aaphreml-irerc/'
