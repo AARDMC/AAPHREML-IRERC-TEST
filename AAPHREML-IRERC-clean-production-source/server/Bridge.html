@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AAPHREML-IRERC backend bridge</title>
+</head>
+<body>
+<script>
+(function() {
+  'use strict';
+  var PAGES_ORIGIN = __IRERC_PAGES_ORIGIN__;
+  var ALLOWED_FUNCTIONS = __IRERC_API_FUNCTIONS__;
+  var CHANNEL = 'aaphreml-irerc-rpc-v1';
+
+  function send(event, type, payload) {
+    if (!event.source || event.source !== window.top || event.origin !== PAGES_ORIGIN) return;
+    var response = { channel: CHANNEL, id: event.data && event.data.id, type: type };
+    if (type === 'result') response.result = payload;
+    else response.error = String(payload || 'Apps Script request failed.').slice(0, 1200);
+    event.source.postMessage(response, event.origin);
+  }
+
+  window.addEventListener('message', function(event) {
+    if (event.source !== window.top || event.origin !== PAGES_ORIGIN) return;
+    var message = event.data;
+    if (!message || message.channel !== CHANNEL) return;
+
+    if (message.type === 'ping') {
+      event.source.postMessage({ channel: CHANNEL, type: 'ready' }, event.origin);
+      return;
+    }
+    if (message.type !== 'call' || typeof message.id !== 'string' ||
+        typeof message.functionName !== 'string') return;
+
+    if (ALLOWED_FUNCTIONS.indexOf(message.functionName) === -1) {
+      send(event, 'error', 'This backend function is not exposed to the portal.');
+      return;
+    }
+
+    var runner = google.script.run
+      .withSuccessHandler(function(result) { send(event, 'result', result); })
+      .withFailureHandler(function(error) {
+        send(event, 'error', error && error.message ? error.message : error);
+      });
+    var endpoint = runner[message.functionName];
+    if (typeof endpoint !== 'function') {
+      send(event, 'error', 'The requested backend function is not available.');
+      return;
+    }
+
+    try {
+      endpoint.apply(runner, Array.isArray(message.args) ? message.args : []);
+    } catch (error) {
+      send(event, 'error', error && error.message ? error.message : error);
+    }
+  });
+
+  if (window.top !== window) {
+    window.top.postMessage({ channel: CHANNEL, type: 'ready' }, PAGES_ORIGIN);
+  }
+})();
+</script>
+</body>
+</html>

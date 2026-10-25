@@ -1,0 +1,1176 @@
+<script>
+// ============================================================================
+// app.html — Client Application Router, Global State, i18n & API Bridge
+// ============================================================================
+
+var AppState = {
+  currentUser: null,
+  currentView: 'dashboard',
+  selectedProtocolId: null,
+  protocolsCache: [],
+  metricsCache: null,
+  notifications: [],
+  language: 'en'
+};
+
+// ============================================================================
+// INTERNATIONALISATION (i18n) — English | Amharic | Oromifaa
+// ============================================================================
+
+var I18N = {
+  en: {
+    // Loader
+    loader_label:       'AAPHREML-IRERC Processing...',
+    loader_sub:         'Secure Institutional Ethics Service',
+    // Brand
+    brand_sub:          'Addis Ababa Health Bureau',
+    // Hero
+    hero_line1:         'Institutional',
+    hero_line2:         ' Research Ethics',
+    hero_line3:         'Review Portal',
+    hero_desc:          'The official digital platform for the Addis Ababa City Administration Health Bureau Institutional Research Ethics Review Committee. Submit, track, and manage research protocol ethical clearance with full transparency and regulatory compliance.',
+    // Features
+    feat1_title:        'Investigators \u2014 Submit Protocols',
+    feat1_desc:         'Register and submit research protocols for ethical review and clearance.',
+    feat2_title:        'IRERC Members \u2014 Review & Assess',
+    feat2_desc:         'Committee members conduct independent ethical assessment of protocols.',
+    feat3_title:        'Full Governance & Compliance',
+    feat3_desc:         'Audit trails, quorum verification, and Ethiopian regulatory compliance.',
+    // Stats
+    stat1: 'Secure', stat2: 'Languages', stat3: 'Role Types', stat4: 'Online Access',
+    // Card
+    card_title:         'Secure Access Portal',
+    card_sub:           'Authenticate to access the IRERC Management System',
+    // Tabs
+    tab_signin:         'Sign In',
+    tab_register:       'Register',
+    // Social
+    signin_google:      'Continue with Google',
+    signin_linkedin:    'Continue with LinkedIn',
+    signin_microsoft:   'Continue with Microsoft',
+    signup_google:      'Sign up with Google',
+    // Dividers
+    divider_or:         'OR SIGN IN WITH EMAIL',
+    divider_form:       'OR REGISTER WITH FORM',
+    // Fields
+    field_email:        'Email Address',
+    field_password:     'Password',
+    field_fullname:     'Full Name (with Title)',
+    field_phone:        'Telephone (Optional)',
+    field_institution:  'Institution / Affiliation',
+    field_department:   'Department',
+    field_create_pw:    'Create Password',
+    field_confirm_pw:   'Confirm Password',
+    // Placeholders
+    ph_email:           'name@institution.org',
+    ph_password:        'Enter your password',
+    ph_fullname:        'Dr. / Mr. / Ms. Full Name',
+    ph_phone:           '+251 91 xxx xxxx',
+    ph_institution:     'Your institution',
+    ph_department:      'Your department',
+    ph_create_pw:       'At least 12 characters',
+    ph_confirm_pw:      'Re-enter your password',
+    // Hints & links
+    pw_hint:            'Use a strong password with letters, numbers, and symbols.',
+    forgot_pw:          'Forgot password?',
+    // Buttons
+    btn_signin:         'Sign In to Portal',
+    btn_register:       'Register as Investigator',
+    // Info boxes
+    info_all_roles:     'All roles',
+    info_all_roles_desc:' (Investigator, Reviewer, Chair, Secretary, Admin) sign in with their registered email and password.',
+    reg_info_title:     'Investigator Registration:',
+    reg_info_desc:      ' Register with your official email and institution details. Committee accounts are provisioned by the Secretariat.',
+    other_roles_title:  'Committee Members, Chair, Secretary:',
+    other_roles_desc:   ' Your account is created by the IRERC Secretary or System Administrator. Contact the Secretariat through your approved institutional channel.',
+    // Footer
+    footer_terms:       'Terms',
+    footer_privacy:     'Privacy',
+    // Nav
+    nav_core:           'Core Management',
+    nav_dashboard:      'Dashboard',
+    nav_protocols:      'Protocols Directory',
+    nav_my_protocols:   'My Protocols',
+    nav_submit:         'Submit Protocol',
+    nav_review:         'Review Workflows',
+    nav_my_reviews:     'My Reviews',
+    nav_screening:      'Admin Screening',
+    nav_assignments:    'Reviewer Assignment',
+    nav_assessment:     'Study Assessment',
+    nav_expedited:      'Expedited Review',
+    nav_meetings:       'IRERC Meetings',
+    nav_governance:     'Post-Approval & Governance',
+    nav_monitoring:     'Field Monitoring',
+    nav_lifecycle:      'Amendments & Renewals',
+    nav_committee:      'Committee Roster',
+    nav_investigators:  'Investigators',
+    nav_reports:        'Compliance Reports',
+    nav_audit:          'Audit Trail',
+    nav_settings:       'Settings',
+    // App misc
+    account_label:      'Account',
+    not_signed_in:      'Not signed in',
+    topbar_title:       'AAPHREML-IRERC Review Portal',
+    search_placeholder: 'Search protocol, PI, site...'
+  },
+
+  am: {
+    loader_label:       '\u12a0\u12a0\u1217\u1228\u121d\u12a4\u120d-\u12a0\u12a0\u1228\u12d0\u122d\u1235 \u12a5\u12eb\u1233\u1233\u12c8\u1215...',
+    loader_sub:         '\u12b0\u1230\u1250\u129b \u1270\u1233\u1272 \u12c8\u1208\u12f0 \u12db\u122c\u1275',
+    brand_sub:          '\u12a0\u12f2\u1235 \u12a0\u1260\u1263 \u1346\u12d8\u1270\u129b \u120d\u12e9\u1235 \u130d\u1208\u1338\u1275 \u1218\u122b',
+    hero_line1:         '\u1270\u1233\u1272\u12ca',
+    hero_line2:         ' \u12e8\u121d\u122d\u121d\u122d \u12a0\u12aa\u1290\u1275',
+    hero_line3:         '\u12f8\u122d\u120b\u12ed \u1356\u122d\u1273\u1209',
+    hero_desc:          '\u1208\u12a0\u12f2\u1235 \u12a0\u1260\u1263 \u12a8\u1270\u121b \u12a0\u1235\u1270\u12f3\u12f0\u122d \u1356\u1208\u1275\u12ca \u12f3\u1293\u1290\u1275 \u12a0\u12aa\u1290\u1275 \u120d\u12e9\u1235 \u130d\u1208\u1338\u1275 \u1218\u122a \u12eb\u1208 \u12e8\u1270\u1233\u1273 \u12e8\u12f2\u1303\u1273\u120d \u12e8\u1215\u121d\u121d\u1275 \u12f0\u1228\u1303. \u12e8\u1235\u122d\u12d0\u1275 \u12a0\u1348\u133b\u1218\u121d \u12e8\u12a5\u12ae\u1263\u1265 \u12ab\u1233\u12cc \u12e8\u1242\u12ad\u120d \u12f0\u1215\u1290\u1275 \u12e8\u1215\u121d\u121d\u1275 \u1235\u122b \u12eb\u1270\u1332\u121d\u12f5\u1260\u1275 \u12a5\u12ad\u12ad\u12ee\u1275\u1295 \u12ed\u12a8\u1275\u1263\u120e\u1235.',
+    feat1_title:        '\u1270\u12cb\u12bb\u12cb\u127d \u2014 \u1340\u12ed\u134c\u1290\u1275 \u12a0\u1245\u122d\u1261',
+    feat1_desc:         '\u1240\u122d\u1362 \u12a0\u1235\u122b\u1235\u1275\u12ce\u1278\u12ce\u1295 \u1208\u12a5\u12ae\u1263\u1265 \u1245\u1295\u1305 \u12a5\u1293 \u1205\u12ad\u121d\u1275 \u12a0\u1245\u122d\u1261\u1362',
+    feat2_title:        '\u12e8\u12c8\u1228\u12f3 \u12a0\u1263\u120b\u1275 \u2014 \u1308\u121d\u130b \u12a5\u1293 \u1320\u1293 \u12a0\u1245\u122d\u1261',
+    feat2_desc:         '\u12e8\u120e\u12ea \u1290\u1293\u12ec \u12a0\u1263\u120b\u1275 \u1270\u1233\u1272 \u12f0\u1225\u1333 \u126d\u1228\u1233 \u12a5\u12ad\u12ad\u12ee\u1275\u1295 \u12ed\u12a8\u1275\u1263\u120e\u1243\u120c\u1361',
+    feat3_title:        '\u130e\u1264\u12ab\u12ca \u12a0\u1235\u1270\u12f3\u12f0\u122d \u12a5\u1293 \u1233\u121d\u1295\u1275 \u1270\u1225\u1298',
+    feat3_desc:         '\u1208\u1350\u12f3\u12f4 \u1218\u12a8\u1273\u1270\u120d\u1362 \u12e8\u13e5\u1228\u121d \u1288\u122d\u1235 \u12a5\u1295\u12f3\u1265\u121b\u1215\u120d\u1362 \u12a5\u1293 \u12e8\u12a2\u1275\u12ee\u1335\u12eb\u12ca \u1235\u122d\u12d0\u1275 \u1265\u12aa\u1363 \u12a0\u1308\u120b\u134d',
+    stat1: '\u1266\u1323\u121d', stat2: '\u1299\u130d\u130d\u12cb\u1275', stat3: '\u12e8\u1263\u130d\u121d\u1205\u1228\u1275 \u12a0\u12ed\u1290\u1275', stat4: '\u1260\u12a2\u1295\u1270\u122d\u1290\u1275 \u1218\u12aa\u1290\u1275',
+    card_title:         '\u12c8\u1230\u1250\u129b \u1218\u1300\u1300\u1218\u12eb \u1356\u122d\u1273\u1209',
+    card_sub:           '\u12af\u1208 \u12a0\u12aa\u1290\u1275 \u12e8\u12c8\u1228\u12f3 \u1218\u12cb\u1259\u1208\u12d8\u12cd \u123d\u122d \u12a0\u12a9\u1290\u1275 \u12a5\u1263\u12ad\u12ce\u1295',
+    tab_signin:         '\u1260\u1235\u1270\u12c8\u1275\u12c8\u1275 \u1245\u1303 \u12ed\u130b\u1261',
+    tab_register:       '\u12e8\u1261\u12d8\u1275 \u12a0\u1235\u1270\u12f3\u12f0\u122d',
+    signin_google:      '\u1260\u1309\u130d\u120d \u132e\u1290\u1275 \u12ed\u130b\u1261',
+    signin_linkedin:    '\u1260\u120a\u1295\u12ad\u12f5\u12a2\u1295 \u132e\u1290\u1275 \u12ed\u130b\u1261',
+    signin_microsoft:   '\u1260\u121a\u12a8\u122e\u1230\u12ab\u1350\u1275 \u132e\u1290\u1275 \u12ed\u130b\u1261',
+    signup_google:      '\u1260\u1309\u130d\u120d \u12e8\u1261\u12d8\u1275 \u12a0\u1235\u1270\u12f3\u12f0\u122d',
+    divider_or:         '\u12c8\u12ed\u121d \u1260\u121d \u12a0\u12f5\u122b\u123e \u12ed\u130b\u1261',
+    divider_form:       '\u12c8\u12ed\u121d \u1260\u1348\u122d\u121d \u1270\u1218\u12dd\u130d\u1265',
+    field_email:        '\u12e8\u12a2\u121c\u12ed\u120d \u12a0\u12f5\u122b\u123e',
+    field_password:     '\u12a5\u1322',
+    field_fullname:     '\u1219\u1209 \u1235\u121d (\u12d8\u12cb \u130d\u1228\u120d)',
+    field_phone:        '\u1238\u12d8\u1290\u129b (\u12d8\u120b\u1270\u12d8-\u12d0\u12ed\u1308\u12d0\u120d)',
+    field_institution:  '\u1270\u1243\u121d / \u121e\u12a8\u122d',
+    field_department:   '\u12f0\u1352\u122d\u1275\u121c\u1295\u1275',
+    field_create_pw:    '\u12a5\u1322 \u1320\u1245',
+    field_confirm_pw:   '\u12a5\u1322 \u12a0\u1228\u130b\u130d\u1325',
+    ph_email:           'name@institution.org',
+    ph_password:        '\u12a5\u1322\u12ce\u1295 \u12ed\u130b\u1265',
+    ph_fullname:        '\u12f3\u1253 / \u12ad/\u12c3/\u12c3 \u1219\u1209 \u1235\u121d',
+    ph_phone:           '+251 91 xxx xxxx',
+    ph_institution:     '\u1270\u1243\u121d\u12ce',
+    ph_department:      '\u12f0\u1352\u122d\u1275\u121c\u1295\u1275\u12ce',
+    ph_create_pw:       '\u1262\u12ab\u1261\u1235 12 \u1247\u1203\u122e\u10eb',
+    ph_confirm_pw:      '\u12a5\u1322\u12ce\u1295 \u12f5\u130e\u121d \u12ed\u130b\u1265',
+    pw_hint:            '\u1245\u122e \u12ac\u130d\u12ac\u130d\u121d\u1362 \u122d\u1245\u121e\u1275 \u12a5\u1293 \u1275\u12ab\u1272\u12ce\u1295 \u1270\u1323\u1240\u121e \u12a5\u1322 \u12ed\u1320\u1243\u121e\u1362',
+    forgot_pw:          '\u12a5\u1322\u12ce\u1295 \u12e8\u1298\u1231?',
+    btn_signin:         '\u12c8\u1228\u12f3\u1260\u1275 \u1275\u130d\u1263\u1275',
+    btn_register:       '\u12a5\u1295\u12f0 \u1240\u12d3\u121d \u1270\u1218\u12dd\u130d\u1265',
+    info_all_roles:     '\u1201\u1209\u121d \u12f0\u1228\u1303\u12ce\u1275',
+    info_all_roles_desc:' (\u1240\u1323\u12ca\u1362 \u1270\u12a8\u1273\u1273\u122a\u1362 \u1378\u12d0\u122d\u1218\u12cd\u1362 \u12e8\u12cd\u1235\u1314\u1362 \u12a0\u12f0\u120d) \u1260\u1270\u1218\u12dd\u1313\u1278\u12cd \u12a2\u121c\u12ed\u120d \u12a5\u1293 \u12a5\u1322 \u12ed\u130b\u1261\u1362',
+    reg_info_title:     '\u12e8\u1240\u1303\u12ca \u1270\u1218\u12dd\u130d\u1265:',
+    reg_info_desc:      ' \u1260\u1270\u1233\u1272 \u12a2\u121c\u12ed\u12d8\u12ce\u1295 \u12a5\u1293 \u1270\u1243\u121d\u12ce\u1295 \u1260\u1218\u122d\u1303\u1275 \u12ed\u1218\u12d8\u1308\u1262\u1361',
+    other_roles_title:  '\u12e8\u12c8\u1228\u12f3 \u12a0\u1263\u120b\u1275\u1363 \u1378\u12d0\u122d\u121c\u1295\u1275\u1363 \u12c8\u12a8\u1234\u120d:',
+    other_roles_desc:   ' \u12a0\u12ad\u12ce\u1295\u1275 \u1260\u12a0\u12aa\u1290\u1275 \u12e8\u12d8\u122b\u1265 \u1200\u120b\u134a \u12c8\u12ed\u121d \u1260\u12a0\u12aa\u1290\u1275 \u12a0\u1235\u1270\u12f3\u12f0\u122d \u12ed\u1218\u1333\u1229\u1362',
+    footer_terms: '\u12e8\u1268\u122d\u12d8\u1275 \u1253\u129b\u12ca', footer_privacy: '\u130d\u120b\u12ca\u1290\u1275',
+    nav_core: '\u12e8\u12a5\u120d\u1245 \u12a0\u1235\u1270\u12f3\u12f0\u122d', nav_dashboard: '\u12f3\u123d\u1266\u122d\u12f5',
+    nav_protocols: '\u12e8\u12f5\u122d\u1321 \u12a0\u1243\u1303', nav_my_protocols: '\u12e8\u12d0\u12e0 \u12f5\u122d\u1323\u12cc\u1275',
+    nav_submit: '\u12f5\u122d\u1321 \u12a0\u1235\u1308\u12ea', nav_review: '\u12e8\u1218\u1228\u121d\u1228\u121d \u120a\u1230\u122e\u1275',
+    nav_my_reviews: '\u12e8\u12d0\u12e0 \u1218\u1228\u121d\u1228\u121c\u12ce\u1275', nav_screening: '\u12e8\u12a0\u12f5\u121b\u12f5 \u1218\u1208\u12eb',
+    nav_assignments: '\u12e8\u12e8\u1270\u12a8\u1273\u1271 \u121e\u12c3\u1218\u12ed\u12eb', nav_assessment: '\u12e8\u1325\u1293\u1275 \u1218\u1218\u12ec\u1275',
+    nav_expedited: '\u12e8\u122b\u1243 \u1218\u1228\u121d\u1228\u121d', nav_meetings: '\u12e8\u12c8\u1228\u12f3 \u12e6\u121d \u1218\u1308\u12e8\u12eb\u12c8\u12ea',
+    nav_governance: '\u12f5\u122d\u1321\u1295 \u12a5\u1295\u12f0 \u1240\u1240\u1308\u1218 \u1260\u128b\u120b \u12a0\u1235\u1270\u12f3\u12f0\u122d',
+    nav_monitoring: '\u12e8\u121d\u1228\u121d\u122d \u1218\u12f8\u1218\u1228\u12eb', nav_lifecycle: '\u1290\u12f5\u12f0\u12cd\u1290\u1275 \u12a5\u1293 \u12e8\u12a5\u12f5\u1233\u1233\u12c8\u1275',
+    nav_committee: '\u12e8\u12c8\u1228\u12f3 \u12a0\u1263\u120b\u1275 \u12e8\u130d\u122d \u12da\u122d\u12da\u122d', nav_investigators: '\u1240\u1303\u12ce\u1275',
+    nav_reports: '\u12e8\u1320\u1252\u1243\u1294\u1275 \u122a\u1356\u122d\u1276\u12cc\u1275', nav_audit: '\u12e8\u1218\u12f2\u1275 \u1218\u12a8\u1273\u1270\u120d',
+    nav_settings: '\u1245\u1295\u1266\u1206\u1290\u1275',
+    account_label: '\u12dd\u1210\u1290\u1275', not_signed_in: '\u12e8\u1218\u130b\u1261 \u12e8\u1209\u121d',
+    topbar_title: '\u12a0\u12a0\u1217\u1228\u121d\u12a4\u120d-\u12a0\u12a0\u1228\u12d0\u122d\u1235 \u12e8\u1270\u1233\u1272 \u1356\u122d\u1273\u1209',
+    search_placeholder: '\u1356\u122e\u1270\u12ae\u12ec\u120d\u1362 \u12f3\u1234\u1239\u127b\u122a \u12e8\u1215\u1219\u1275 \u1235\u134d...'
+  },
+
+  orm: {
+    loader_label:       'AAPHREML-IRERC Hojjetaa jira...',
+    loader_sub:         'Tajaajila Dhimma Barnoonni Nageenya Dhaabbata',
+    brand_sub:          'Biiroo Fayyaa Finfinnee',
+    hero_line1:         'Dhaabbata',
+    hero_line2:         ' Qorannoo Naamusaa',
+    hero_line3:         'Portaala Sakatta\'ii',
+    hero_desc:          'Marsariitii rasmii dhaabbata Biiroo Fayyaa Bulchiinsa Magaalaa Finfinnee, Koree Sakatta\'ii Naamusaa Qorannoo. Maxxansa qorannoo, hordoffii fi bulchuu naamusaan guutummaatti dhiheessuu.',
+    feat1_title:        'Qorataa \u2014 Karoora Dhiheessuu',
+    feat1_desc:         'Galmaa\'i fi karoora qorannoo sakatta\'ii naamusaa fi hayyamaaf dhiheessi.',
+    feat2_title:        'Miseensota IRERC \u2014 Sakatta\'i & Madaali',
+    feat2_desc:         'Miseensota koree sakatta\'ii naamusaa adda addaa ni taasisu.',
+    feat3_title:        'To\'annoo fi Hordoffii Guutuu',
+    feat3_desc:         'Galmeewwan hordoffii, mirkaneessaa fi seerota biyyaaleessa Itoophiyaatiin.',
+    stat1: 'Nageenya', stat2: 'Afaanota', stat3: 'Gosa Gahee', stat4: 'Carraa 24/7',
+    card_title:         'Portaala Seensa Nageenya',
+    card_sub:           'Dhaabbata IRERC seenuu mirkaneessuu',
+    tab_signin:         'Seeni',
+    tab_register:       'Galmaa\'i',
+    signin_google:      'Googletiin itti fufuu',
+    signin_linkedin:    'LinkedIniitiin itti fufuu',
+    signin_microsoft:   'Microsoftiitiin itti fufuu',
+    signup_google:      'Googledhaan galmaa\'i',
+    divider_or:         'YOOKAAN IMEELIIDHAAN SEENI',
+    divider_form:       'YOOKAAN FOOMIIDHAAN GALMAA\'I',
+    field_email:        'Teessoo Imeelii',
+    field_password:     'Jecha Darbii',
+    field_fullname:     'Maqaa Guutuu (Taayitaa Waliin)',
+    field_phone:        'Bilbila (Dirqama Miti)',
+    field_institution:  'Dhaabbata / Walitti Dhufeenya',
+    field_department:   'Damee',
+    field_create_pw:    'Jecha Darbii Uumi',
+    field_confirm_pw:   'Jecha Darbii Mirkaneessi',
+    ph_email:           'name@institution.org',
+    ph_password:        'Jecha darbiikee galchi',
+    ph_fullname:        'Dr. / Obbo / Aaddee Maqaa Guutuu',
+    ph_phone:           '+251 91 xxx xxxx',
+    ph_institution:     'Dhaabbatakee',
+    ph_department:      'Damee kee',
+    ph_create_pw:       'Xaqqallatti qubee 12',
+    ph_confirm_pw:      'Jecha darbii irra deebi\'i galchi',
+    pw_hint:            'Jecha darbii jabaa fayyadami, qubee, lakkoofsa fi mallattoo walqabatee.',
+    forgot_pw:          'Jecha darbii irraanfatte?',
+    btn_signin:         'Portaalatti Seeni',
+    btn_register:       'Akka Qorataaatti Galmaa\'i',
+    info_all_roles:     'Gaheeleen hundi',
+    info_all_roles_desc:' (Qorataa, Sakatta\'aa, Koree Bulchaa, Barreessaa, Bulchaa) imeelii fi jecha darbiitiin seenu.',
+    reg_info_title:     'Galmee Qorataa:',
+    reg_info_desc:      ' Imeelii fi ragaalee dhaabbata keessan waliin galmaa\'i.',
+    other_roles_title:  'Miseensota Koree, Bulchaa, Barreessaa:',
+    other_roles_desc:   ' Herregni kee Barreessaa yookaan Bulchaa Siisteemin ni uumama.',
+    footer_terms: 'Tumaalee', footer_privacy: 'Iccitii',
+    nav_core: 'Bulchiinsa Murteessaa', nav_dashboard: 'Gabaasa Xumuraa',
+    nav_protocols: 'Galmee Karoora', nav_my_protocols: 'Karoora Koo',
+    nav_submit: 'Karoora Dhiheessi', nav_review: 'Hojii Sakatta\'ii',
+    nav_my_reviews: 'Sakatta\'ii Koo', nav_screening: 'Sakatta\'ii Bulchiinsa',
+    nav_assignments: 'Ramaddii Sakatta\'aa', nav_assessment: 'Madaallii Qorannoo',
+    nav_expedited: 'Sakatta\'ii Hatattamaa', nav_meetings: 'Marii IRERC',
+    nav_governance: 'Too\'annoo Booda Hayyamaa',
+    nav_monitoring: 'Hordoffii Dirree', nav_lifecycle: 'Fooyya\'insa & Haaromsuu',
+    nav_committee: 'Miseensota Koree', nav_investigators: 'Qorattoota',
+    nav_reports: 'Gabaasaalee Hordoffii', nav_audit: 'Hordoffii Seenaa',
+    nav_settings: 'Qindaa\'insa',
+    account_label: 'Herrega', not_signed_in: 'Hin seenamne',
+    topbar_title: 'AAPHREML-IRERC Portaala Sakatta\'ii',
+    search_placeholder: 'Karoora, PI, bakka barbadi...'
+  }
+};
+
+/**
+ * Set UI language. Translates all data-i18n and data-i18n-placeholder elements.
+ */
+function setLanguage(lang) {
+  if (!I18N[lang]) return;
+  AppState.language = lang;
+  var dict = I18N[lang];
+
+  // Update lang-btn active state (auth screen)
+  ['en', 'am', 'orm'].forEach(function(l) {
+    var btn = document.getElementById('lang-' + l);
+    if (btn) {
+      btn.classList.toggle('active', l === lang);
+      btn.setAttribute('aria-pressed', l === lang ? 'true' : 'false');
+    }
+  });
+
+  // Translate text content
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var key = el.getAttribute('data-i18n');
+    if (dict[key] !== undefined) el.textContent = dict[key];
+  });
+
+  // Translate placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+    var key = el.getAttribute('data-i18n-placeholder');
+    if (dict[key] !== undefined) el.placeholder = dict[key];
+  });
+
+  // Update html lang attribute
+  document.documentElement.setAttribute('lang', lang === 'am' ? 'am' : lang === 'orm' ? 'om' : 'en');
+
+  // Persist preference
+  try { sessionStorage.setItem('aaphreml-lang', lang); } catch(e) {}
+}
+
+// ============================================================================
+// SOCIAL AUTHENTICATION (OAuth redirect stubs)
+// Actual OAuth is configured per deployment; these show a clear UX message.
+// ============================================================================
+
+/**
+ * Social OAuth handler.
+ * - Google: uses Google Identity Services (GIS) — reads Client ID from
+ *   window.IRERC_CONFIG.googleClientId  (set in your GitHub Pages config block)
+ * - LinkedIn / Microsoft: shows contact instructions (configure redirect URLs
+ *   in IRERC_CONFIG.oauth.linkedin / .microsoft when ready)
+ */
+function handleSocialAuth(provider) {
+  var errBox    = document.getElementById('login-error');
+  var regErrBox = document.getElementById('reg-error');
+
+  function showAuthError(msg) {
+    if (errBox)    { errBox.querySelector('span').textContent = msg;    errBox.style.display    = 'block'; }
+    if (regErrBox) { regErrBox.querySelector('span').textContent = msg; regErrBox.style.display = 'block'; }
+  }
+  function clearAuthError() {
+    if (errBox)    errBox.style.display    = 'none';
+    if (regErrBox) regErrBox.style.display = 'none';
+  }
+
+  var cfg = window.IRERC_CONFIG || {};
+
+  // ── Google Sign-In via Google Identity Services ──────────────────────────
+  if (provider === 'google') {
+    var clientId = cfg.googleClientId;
+    if (!clientId) {
+      showAuthError('Google sign-in is not yet configured. Please sign in with your institutional email and password, or contact the IRERC Secretariat.');
+      return;
+    }
+    clearAuthError();
+
+    function _initGIS() {
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: function(response) {
+          if (!response || !response.credential) {
+            showAuthError('Google sign-in was cancelled or failed. Please try again.');
+            return;
+          }
+          showLoader(true);
+          callBackend('apiGoogleAuth', [response.credential], function(res) {
+            showLoader(false);
+            if (res && res.user && res.session_token) {
+              try { saveSessionToken_(res.session_token); } catch(e) { showAuthError(e.message); return; }
+              completeSignIn(res.user);
+            } else {
+              showAuthError((res && res.error) ? res.error : 'Google sign-in failed. Please try again.');
+            }
+          }, function(err) {
+            showLoader(false);
+            showAuthError(err || 'Google sign-in failed. Please try again.');
+          });
+        },
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+      google.accounts.id.prompt(function(notification) {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // Fallback: render button popup
+          google.accounts.id.renderButton(
+            document.createElement('div'),
+            { theme: 'outline', size: 'large' }
+          );
+          google.accounts.id.prompt();
+        }
+      });
+    }
+
+    // Load GIS script on demand if not already loaded
+    if (window.google && window.google.accounts) {
+      _initGIS();
+    } else {
+      var script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = _initGIS;
+      script.onerror = function() {
+        showAuthError('Could not load Google sign-in. Check your internet connection.');
+      };
+      document.head.appendChild(script);
+    }
+    return;
+  }
+
+  // ── LinkedIn ─────────────────────────────────────────────────────────────
+  if (provider === 'linkedin') {
+    var linkedinUrl = cfg.oauth && cfg.oauth.linkedin;
+    if (linkedinUrl) { window.location.href = linkedinUrl; return; }
+    showToast('LinkedIn sign-in: Ask your IRERC Administrator to configure the LinkedIn OAuth redirect URL in the deployment config.', 'info');
+    showAuthError('LinkedIn sign-in is not configured for this deployment. Use your institutional email and password to sign in.');
+    return;
+  }
+
+  // ── Microsoft ────────────────────────────────────────────────────────────
+  if (provider === 'microsoft') {
+    var msUrl = cfg.oauth && cfg.oauth.microsoft;
+    if (msUrl) { window.location.href = msUrl; return; }
+    showToast('Microsoft sign-in: Ask your IRERC Administrator to configure the Microsoft OAuth redirect URL in the deployment config.', 'info');
+    showAuthError('Microsoft sign-in is not configured for this deployment. Use your institutional email and password to sign in.');
+    return;
+  }
+}
+
+
+// ============================================================================
+// PASSWORD VISIBILITY TOGGLE
+// ============================================================================
+
+function togglePwVisibility(inputId, btn) {
+  var input = document.getElementById(inputId);
+  if (!input) return;
+  var isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  var icon = btn.querySelector('i');
+  if (icon) {
+    icon.className = isHidden ? 'far fa-eye-slash' : 'far fa-eye';
+  }
+  btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+}
+
+// ============================================================================
+// FORGOT PASSWORD INFO
+// ============================================================================
+
+function showForgotPasswordInfo() {
+  var lang = AppState.language || 'en';
+  var msgs = {
+    en:  'To reset your password, contact the IRERC Secretariat through your institutional channel. IRERC Administrators can reset passwords via the Settings panel.',
+    am:  '\u12a5\u1322\u12ce\u1295 \u1208\u12e8\u1305 \u1208\u12ca \u12a0\u12aa\u1290\u1275 \u12e8\u12d8\u122b\u1265 \u1200\u120b\u134a\u1295 \u12ed\u1270\u12cb\u12c8\u1261\u1361',
+    orm: 'Jecha darbii haaromsuf Barreessaa IRERC qunnamaa.'
+  };
+  showToast(msgs[lang] || msgs.en, 'info');
+}
+
+/**
+ * GitHub Pages to Apps Script RPC bridge.
+ * The hidden Apps Script iframe accepts calls only from the configured Pages origin.
+ */
+var _RPC_CHANNEL_ = 'aaphreml-irerc-rpc-v1';
+var _RPC_PENDING_ = Object.create(null);
+var _RPC_READY_WAITERS_ = [];
+var _RPC_BRIDGE_ORIGIN_ = '';
+var _RPC_REQUEST_SEQUENCE_ = 0;
+var _RPC_API_ALIASES_ = {
+  deleteFileFromDrive: 'apiDeleteFileFromDrive',
+  generateNextProtocolCode: 'apiGenerateNextProtocolCode',
+  loadForEdit: 'apiLoadForEdit',
+  processFormSubmission: 'apiProcessFormSubmission',
+  processUploadedFile: 'apiProcessUploadedFile'
+};
+
+function hasRpcBridge_() {
+  return !!(window.IRERC_CONFIG && window.IRERC_CONFIG.bridgeUrl);
+}
+
+function _isTrustedBridgeOrigin_(origin) {
+  try {
+    var url = new URL(origin);
+    return url.protocol === 'https:' &&
+      (url.hostname === 'script.google.com' ||
+       url.hostname === 'googleusercontent.com' ||
+       url.hostname.slice(-'.googleusercontent.com'.length) === '.googleusercontent.com');
+  } catch (e) {
+    return false;
+  }
+}
+
+function _getBridgeFrame_() {
+  if (!hasRpcBridge_()) throw new Error('The Apps Script backend URL is not configured for this page.');
+  var frame = document.getElementById('irerc-gas-bridge');
+  if (!frame) {
+    frame = document.createElement('iframe');
+    frame.id = 'irerc-gas-bridge';
+    frame.title = 'AAPHREML-IRERC backend connection';
+    frame.setAttribute('aria-hidden', 'true');
+    frame.setAttribute('referrerpolicy', 'strict-origin');
+    frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(frame);
+  }
+  if (frame.dataset.irercBridgeUrl !== window.IRERC_CONFIG.bridgeUrl) {
+    frame.dataset.irercBridgeUrl = window.IRERC_CONFIG.bridgeUrl;
+    frame.src = window.IRERC_CONFIG.bridgeUrl;
+  }
+  return frame;
+}
+
+function _isBridgeFrameSource_(frame, source) {
+  if (!frame || !source) return false;
+  var current = source;
+  for (var depth = 0; depth < 16; depth++) {
+    if (current === frame.contentWindow) return true;
+    try {
+      var parent = current.parent;
+      if (!parent || parent === current) return false;
+      current = parent;
+    } catch (e) {
+      return false;
+    }
+  }
+  return false;
+}
+
+function _postToBridgeFrames_(frame, message, targetOrigin) {
+  if (!frame || !frame.contentWindow) return;
+  var queue = [{ window: frame.contentWindow, depth: 0 }];
+  var discovered = 1;
+  var cursor = 0;
+  while (cursor < queue.length && cursor < 64) {
+    var entry = queue[cursor++];
+    try {
+      entry.window.postMessage(message, targetOrigin);
+    } catch (e) {}
+    if (entry.depth >= 10 || discovered >= 64) continue;
+    try {
+      var frames = entry.window.frames;
+      var count = Math.min(Number(frames.length) || 0, 64 - discovered);
+      for (var i = 0; i < count; i++) {
+        queue.push({ window: frames[i], depth: entry.depth + 1 });
+        discovered++;
+      }
+    } catch (e) {}
+  }
+}
+window.addEventListener('message', function(event) {
+  var frame = document.getElementById('irerc-gas-bridge');
+  if (!_isBridgeFrameSource_(frame, event.source) || !_isTrustedBridgeOrigin_(event.origin)) return;
+  var message = event.data;
+  if (!message || message.channel !== _RPC_CHANNEL_) return;
+
+  if (message.type === 'ready') {
+    _RPC_BRIDGE_ORIGIN_ = event.origin;
+    var waiters = _RPC_READY_WAITERS_.splice(0);
+    waiters.forEach(function(waiter) {
+      clearTimeout(waiter.timer);
+      waiter.resolve(frame);
+    });
+    return;
+  }
+
+  var pending = _RPC_PENDING_[message.id];
+  if (!pending) return;
+  delete _RPC_PENDING_[message.id];
+  clearTimeout(pending.timer);
+  if (message.type === 'result') pending.resolve(message.result);
+  else pending.reject(new Error(message.error || 'Apps Script request failed.'));
+});
+
+function _waitForBridge_() {
+  return new Promise(function(resolve, reject) {
+    var frame;
+    try {
+      frame = _getBridgeFrame_();
+    } catch (e) {
+      reject(e);
+      return;
+    }
+    if (_RPC_BRIDGE_ORIGIN_) {
+      resolve(frame);
+      return;
+    }
+    var waiter = { resolve: resolve, reject: reject, timer: null };
+    waiter.timer = setTimeout(function() {
+      var index = _RPC_READY_WAITERS_.indexOf(waiter);
+      if (index >= 0) _RPC_READY_WAITERS_.splice(index, 1);
+      reject(new Error('Could not connect to the Apps Script backend. Check the web-app deployment and access settings.'));
+    }, 30000);
+    _RPC_READY_WAITERS_.push(waiter);
+  });
+}
+
+function _callRpc_(functionName, args) {
+  return _waitForBridge_().then(function(frame) {
+    return new Promise(function(resolve, reject) {
+      var requestId = 'irerc_' + Date.now() + '_' + (++_RPC_REQUEST_SEQUENCE_);
+      var pending = {
+        resolve: resolve,
+        reject: reject,
+        timer: setTimeout(function() {
+          delete _RPC_PENDING_[requestId];
+          reject(new Error('The Apps Script backend request timed out.'));
+        }, 120000)
+      };
+      _RPC_PENDING_[requestId] = pending;
+      try {
+        _postToBridgeFrames_(frame, {
+          channel: _RPC_CHANNEL_,
+          type: 'call',
+          id: requestId,
+          functionName: functionName,
+          args: args || []
+        }, _RPC_BRIDGE_ORIGIN_);
+      } catch (e) {
+        clearTimeout(pending.timer);
+        delete _RPC_PENDING_[requestId];
+        reject(e);
+      }
+    });
+  });
+}
+
+function gas(fn) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  var target = _RPC_API_ALIASES_[fn] || fn;
+  args.push(getSessionToken_());
+  return _callRpc_(target, args);
+}
+
+
+function getSessionToken_() {
+  try {
+    return window.sessionStorage.getItem('aaphreml-session-token') || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function saveSessionToken_(token) {
+  try {
+    window.sessionStorage.setItem('aaphreml-session-token', token);
+  } catch (e) {
+    throw new Error('This browser cannot securely store the login session.');
+  }
+}
+
+function clearSessionToken_() {
+  try {
+    window.sessionStorage.removeItem('aaphreml-session-token');
+  } catch (e) {
+    // The server-side session is revoked even if browser storage is unavailable.
+  }
+}
+
+function errMsg(e) {
+  return (e && e.message ? e.message : String(e || 'Something went wrong')).replace(/^Error:\s*/, '');
+}
+
+function callBackend(funcName, args, callback, errorCallback) {
+  // Mode A: Direct Google Apps Script execution (served by doGet)
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    showLoader(true);
+    var requestArgs = (args || []).slice();
+    requestArgs.push(getSessionToken_());
+    google.script.run
+      .withSuccessHandler(function(response) {
+        showLoader(false);
+        if (response && response.success === false) {
+          showToast(response.error || 'Server error', 'danger');
+          if (errorCallback) errorCallback(response.error);
+          return;
+        }
+        var payload = (response && response.data !== undefined) ? response.data : response;
+        if (callback) callback(payload);
+      })
+      .withFailureHandler(function(err) {
+        showLoader(false);
+        var msg = err && err.message ? err.message : 'Execution failed';
+        showToast(msg, 'danger');
+        if (errorCallback) errorCallback(msg);
+      })[funcName].apply(google.script.run, requestArgs);
+    return;
+  }
+
+  // Mode B: GitHub Pages → RPC bridge
+  if (!hasRpcBridge_()) {
+    var unavailable = 'Open the deployed GitHub Pages portal to use the application.';
+    showToast(unavailable, 'warning');
+    if (errorCallback) errorCallback(unavailable);
+    return;
+  }
+
+  showLoader(true);
+  var requestArgs2 = (args || []).slice();
+  requestArgs2.push(getSessionToken_());
+
+  _callRpc_(funcName, requestArgs2).then(function(response) {
+    showLoader(false);
+    if (response && response.success === false) {
+      showToast(response.error || 'Server error', 'danger');
+      if (errorCallback) errorCallback(response.error);
+      return;
+    }
+    var payload = (response && response.data !== undefined) ? response.data : response;
+    if (callback) callback(payload);
+  }).catch(function(err) {
+    showLoader(false);
+    showToast(err && err.message ? err.message : 'Execution failed', 'danger');
+    if (errorCallback) errorCallback(err);
+  });
+}
+
+
+
+/**
+ * Shows / hides full-screen loading spinner
+ */
+function showLoader(visible) {
+  var el = document.getElementById('global-loader');
+  if (el) el.style.display = visible ? 'flex' : 'none';
+}
+
+/**
+ * Dispatches toast notification alerts
+ */
+function showToast(message, type) {
+  var container = document.getElementById('toast-container');
+  if (!container) return;
+
+  var toast = document.createElement('div');
+  toast.className = 'toast toast-' + (type || 'info');
+  var icon = type === 'success' ? 'fa-check-circle' : type === 'danger' ? 'fa-exclamation-circle' : 'fa-info-circle';
+  toast.innerHTML = '<i class="fas ' + icon + '"></i><span>' + message + '</span>';
+
+  container.appendChild(toast);
+  setTimeout(function() {
+    toast.style.opacity = '0';
+    setTimeout(function() { toast.remove(); }, 300);
+  }, 4000);
+}
+
+/**
+ * Core Hash Router
+ */
+function navigateTo(viewName, param) {
+  // Protocol submission is strictly exclusive to Investigator and System Administrator
+  if (viewName === 'submission') {
+    var curRole = AppState.currentUser ? AppState.currentUser.role : '';
+    if (curRole !== 'Investigator' && curRole !== 'System Administrator') {
+      showToast('Protocol submission is exclusive to Principal Investigators and System Administrators.', 'warning');
+      navigateTo('dashboard');
+      return;
+    }
+  }
+
+  AppState.currentView = viewName;
+  window.location.hash = '#' + viewName + (param ? '/' + param : '');
+
+  // Update sidebar active class
+  var navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(function(item) {
+    item.classList.remove('active');
+    if (item.getAttribute('data-view') === viewName) {
+      item.classList.add('active');
+    }
+  });
+
+  // Render specific view
+  var container = document.getElementById('content-container');
+  if (!container) return;
+
+  switch(viewName) {
+    case 'dashboard':
+      renderDashboardView();
+      break;
+    case 'protocols':
+      renderProtocolsView();
+      break;
+    case 'my-protocols':
+      renderMyProtocolsView();
+      break;
+    case 'protocol-detail':
+      renderProtocolDetailView(param);
+      break;
+    case 'submission':
+      renderSubmissionView();
+      break;
+    case 'screening':
+      renderScreeningView();
+      break;
+    case 'assignments':
+      renderAssignmentsView();
+      break;
+    case 'reviews':
+      renderReviewsView();
+      break;
+    case 'my-reviews':
+      renderMyReviewsView();
+      break;
+    case 'expedited':
+      renderExpeditedView();
+      break;
+    case 'meetings':
+      renderMeetingsView();
+      break;
+    case 'lifecycle':
+      renderLifecycleView();
+      break;
+    case 'monitoring':
+      renderMonitoringView();
+      break;
+    case 'data-collection':
+      renderDataCollectionView(param);
+      break;
+    case 'progress-report':
+      renderProgressReportForm(param);
+      break;
+    case 'closeout':
+      renderCloseoutForm(param);
+      break;
+    case 'committee':
+      renderCommitteeView();
+      break;
+    case 'investigators':
+      renderInvestigatorsView();
+      break;
+    case 'reports':
+      renderReportsView();
+      break;
+    case 'audit':
+      renderAuditView();
+      break;
+    case 'settings':
+      renderSettingsView();
+      break;
+    default:
+      renderDashboardView();
+  }
+
+  // Close mobile sidebar on navigate
+  closeMobileSidebar();
+}
+
+
+/**
+ * Switch Auth Tab (Login vs Register)
+ */
+function switchAuthTab(tab) {
+  var loginBtn = document.getElementById('tab-login-btn');
+  var regBtn = document.getElementById('tab-register-btn');
+  var paneLogin = document.getElementById('pane-login');
+  var paneRegister = document.getElementById('pane-register');
+  var loginErr = document.getElementById('login-error');
+  var regErr = document.getElementById('reg-error');
+  var regSucc = document.getElementById('reg-success');
+  if (loginErr) loginErr.style.display = 'none';
+  if (regErr) regErr.style.display = 'none';
+  if (regSucc) regSucc.style.display = 'none';
+
+  if (tab === 'register') {
+    if (loginBtn) { loginBtn.classList.remove('active'); loginBtn.setAttribute('aria-selected', 'false'); }
+    if (regBtn)   { regBtn.classList.add('active');     regBtn.setAttribute('aria-selected', 'true'); }
+    if (paneLogin)    paneLogin.classList.remove('active');
+    if (paneRegister) paneRegister.classList.add('active');
+  } else {
+    if (regBtn)   { regBtn.classList.remove('active');  regBtn.setAttribute('aria-selected', 'false'); }
+    if (loginBtn) { loginBtn.classList.add('active');   loginBtn.setAttribute('aria-selected', 'true'); }
+    if (paneRegister) paneRegister.classList.remove('active');
+    if (paneLogin)    paneLogin.classList.add('active');
+  }
+}
+
+/**
+ * Handle Standard Form Login
+ */
+function handleLogin(directEmail, directPassword) {
+  var email = directEmail || (document.getElementById('login-email') ? document.getElementById('login-email').value.trim() : '');
+  var password = directPassword || (document.getElementById('login-password') ? document.getElementById('login-password').value : '');
+  var errBox = document.getElementById('login-error');
+
+  if (!email) {
+    if (errBox) {
+      errBox.querySelector('span').textContent = 'Please enter your registered email address.';
+      errBox.style.display = 'block';
+    }
+    return;
+  }
+  if (!password) {
+    if (errBox) {
+      errBox.querySelector('span').textContent = 'Please enter your account password.';
+      errBox.style.display = 'block';
+    }
+    return;
+  }
+  if (errBox) errBox.style.display = 'none';
+
+  callBackend('apiLoginUser', [email, password], function(res) {
+    if (res && res.user && res.session_token) {
+      try {
+        saveSessionToken_(res.session_token);
+      } catch (e) {
+        if (errBox) {
+          errBox.querySelector('span').textContent = e.message;
+          errBox.style.display = 'block';
+        }
+        return;
+      }
+      completeSignIn(res.user);
+    } else {
+      if (errBox) {
+        errBox.querySelector('span').textContent = (res && res.error) ? res.error : 'Invalid email or password.';
+        errBox.style.display = 'block';
+      }
+    }
+  }, function(err) {
+    if (errBox) {
+      errBox.querySelector('span').textContent = err || 'Authentication failed. Please verify credentials.';
+      errBox.style.display = 'block';
+    }
+  });
+}
+
+/**
+ * Load the protected portal screens only after authentication succeeds.
+ */
+function ensurePortalViewsLoaded_() {
+  if (typeof renderDashboardView === 'function') return Promise.resolve();
+  if (window.__IRERC_VIEWS_PROMISE) return window.__IRERC_VIEWS_PROMISE;
+
+  window.__IRERC_VIEWS_PROMISE = new Promise(function(resolve, reject) {
+    var script = document.createElement('script');
+    script.src = new URL('./views.js', document.baseURI).href;
+    script.async = true;
+    script.onload = function() {
+      if (typeof renderDashboardView === 'function') resolve();
+      else reject(new Error('The portal screens did not initialize.'));
+    };
+    script.onerror = function() {
+      window.__IRERC_VIEWS_PROMISE = null;
+      reject(new Error('The portal screens could not load. Check your connection and try again.'));
+    };
+    document.head.appendChild(script);
+  });
+
+  return window.__IRERC_VIEWS_PROMISE;
+}
+
+/**
+ * Complete Sign In and Transition to Main Portal
+ */
+function completeSignIn(user) {
+  return ensurePortalViewsLoaded_().then(function() {
+    AppState.currentUser = user;
+
+    var authScreen = document.getElementById('auth-screen');
+    var appLayout = document.getElementById('app-layout');
+    if (authScreen) authScreen.style.display = 'none';
+    if (appLayout) appLayout.style.display = 'flex';
+
+    var nameEl = document.getElementById('topbar-user-name');
+    if (nameEl) nameEl.textContent = user.full_name;
+    var roleEl = document.getElementById('topbar-user-role');
+    if (roleEl) roleEl.textContent = user.role;
+    var footerName = document.getElementById('sidebar-user-name');
+    if (footerName) footerName.textContent = user.full_name;
+    var footerRole = document.getElementById('sidebar-user-role');
+    if (footerRole) footerRole.textContent = user.role;
+    var avatarEl = document.getElementById('sidebar-user-avatar');
+    if (avatarEl) {
+      var parts = user.full_name.split(' ');
+      var initials = (parts[0] ? parts[0][0] : 'U') + (parts.length > 1 ? parts[parts.length-1][0] : 'S');
+      avatarEl.textContent = initials.toUpperCase();
+    }
+
+    if (typeof applyRoleBasedNav === 'function') {
+      applyRoleBasedNav(user.role);
+    }
+
+    showToast('Authenticated as ' + user.full_name + ' (' + user.role + ')', 'success');
+    navigateTo('dashboard');
+  }).catch(function(error) {
+    var authScreen = document.getElementById('auth-screen');
+    var appLayout = document.getElementById('app-layout');
+    if (authScreen) authScreen.style.display = 'block';
+    if (appLayout) appLayout.style.display = 'none';
+
+    var errBox = document.getElementById('login-error');
+    if (errBox) {
+      errBox.querySelector('span').textContent = error && error.message
+        ? error.message
+        : 'The portal screens could not load. Please try again.';
+      errBox.style.display = 'block';
+    }
+  });
+}
+
+/**
+ * Handle Safe Sign Out
+ */
+function handleLogout() {
+  callBackend('apiLogoutUser', [], function() {
+    clearSessionToken_();
+    AppState.currentUser = null;
+    var authScreen = document.getElementById('auth-screen');
+    var appLayout = document.getElementById('app-layout');
+    if (authScreen) authScreen.style.display = 'block';
+    if (appLayout) appLayout.style.display = 'none';
+    switchAuthTab('login');
+    showToast('Signed out successfully.', 'info');
+  });
+}
+
+/**
+ * Handle Investigator Registration
+ */
+function handleRegister() {
+  var name = document.getElementById('reg-name') ? document.getElementById('reg-name').value.trim() : '';
+  var email = document.getElementById('reg-email') ? document.getElementById('reg-email').value.trim() : '';
+  var phone = document.getElementById('reg-phone') ? document.getElementById('reg-phone').value.trim() : '';
+  var institution = document.getElementById('reg-institution') ? document.getElementById('reg-institution').value.trim() : '';
+  var department = document.getElementById('reg-department') ? document.getElementById('reg-department').value.trim() : '';
+  var pass1 = document.getElementById('reg-password') ? document.getElementById('reg-password').value : '';
+  var pass2 = document.getElementById('reg-password2') ? document.getElementById('reg-password2').value : '';
+
+  var errBox = document.getElementById('reg-error');
+  var succBox = document.getElementById('reg-success');
+  if (errBox) errBox.style.display = 'none';
+  if (succBox) succBox.style.display = 'none';
+
+  if (!name) {
+    showRegError_('Please enter your full name with title.');
+    return;
+  }
+  if (!email || email.indexOf('@') === -1) {
+    showRegError_('Please enter a valid official email address.');
+    return;
+  }
+  if (!institution) {
+    showRegError_('Please specify your institution or university affiliation.');
+    return;
+  }
+  if (!pass1 || pass1.length < 12) {
+    showRegError_('Password must contain at least 12 characters.');
+    return;
+  }
+  if (pass1 !== pass2) {
+    showRegError_('Passwords do not match. Please re-enter.');
+    return;
+  }
+
+  var payload = {
+    full_name: name,
+    email: email,
+    telephone: phone,
+    institution_name: institution,
+    department: department,
+    password: pass1
+  };
+
+  callBackend('apiRegisterInvestigator', [payload], function(res) {
+    callBackend('apiLoginUser', [email, pass1], function(auth) {
+      if (!auth || !auth.user || !auth.session_token) {
+        showRegError_('Account created, but sign-in failed. Please sign in with your new credentials.');
+        switchAuthTab('login');
+        return;
+      }
+      try {
+        saveSessionToken_(auth.session_token);
+      } catch (e) {
+        showRegError_(e.message);
+        return;
+      }
+      if (succBox) {
+        succBox.querySelector('span').textContent = 'Account created successfully! Signing you in as Investigator...';
+        succBox.style.display = 'block';
+      }
+      completeSignIn(auth.user);
+      showToast('Welcome, ' + name + '! You can now submit your research protocols.', 'success');
+    }, function(err) {
+      showRegError_(err || 'Account created, but sign-in failed. Please sign in with your new credentials.');
+      switchAuthTab('login');
+    });
+  }, function(err) {
+    showRegError_(err || 'Registration failed. An account with this email may already exist.');
+  });
+}
+
+function showRegError_(msg) {
+  var errBox = document.getElementById('reg-error');
+  if (errBox) {
+    errBox.querySelector('span').textContent = msg;
+    errBox.style.display = 'block';
+  }
+}
+
+/**
+ * Mobile Sidebar Drawer Controls
+ */
+function closeMobileSidebar() {
+  var sidebar = document.getElementById('sidebar');
+  var backdrop = document.getElementById('sidebar-backdrop');
+  if (sidebar) sidebar.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('active');
+}
+
+function openMobileSidebar() {
+  var sidebar = document.getElementById('sidebar');
+  var backdrop = document.getElementById('sidebar-backdrop');
+  if (sidebar) sidebar.classList.add('open');
+  if (backdrop) backdrop.classList.add('active');
+}
+
+function toggleMobileSidebar() {
+  var sidebar = document.getElementById('sidebar');
+  if (sidebar && sidebar.classList.contains('open')) {
+    closeMobileSidebar();
+  } else {
+    openMobileSidebar();
+  }
+}
+
+/**
+ * Application Lifecycle & Global Event Delegation on DOM Ready
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  // 0. Restore language preference
+  try {
+    var savedLang = sessionStorage.getItem('aaphreml-lang');
+    if (savedLang && I18N[savedLang]) setLanguage(savedLang);
+    else setLanguage('en');
+  } catch(e) { setLanguage('en'); }
+
+  // 1. Mobile Menu Toggle Button
+  var menuBtn = document.getElementById('mobile-toggle');
+  if (menuBtn) {
+    menuBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      toggleMobileSidebar();
+    });
+  }
+
+  // 2. Mobile Backdrop Click
+  var backdrop = document.getElementById('sidebar-backdrop');
+  if (backdrop) {
+    backdrop.addEventListener('click', closeMobileSidebar);
+  }
+
+  // 3. Robust Event Delegation for all [data-view] elements across entire app
+  document.addEventListener('click', function(e) {
+    var navItem = e.target.closest('[data-view]');
+    if (navItem) {
+      e.preventDefault();
+      var view = navItem.getAttribute('data-view');
+      navigateTo(view);
+      closeMobileSidebar();
+    }
+  });
+
+  // 4. Hash Router Change Listener
+  window.addEventListener('hashchange', function() {
+    var hash = window.location.hash.substring(1);
+    if (hash) {
+      var parts = hash.split('/');
+      navigateTo(parts[0], parts[1]);
+    }
+  });
+
+  // 5. Global Search Keydown
+  var globalSearch = document.querySelector('.global-search input');
+  if (globalSearch) {
+    globalSearch.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        navigateTo('protocols');
+        var input = document.getElementById('filter-search');
+        if (input) {
+          input.value = this.value;
+          if (typeof applyProtocolFilters === 'function') applyProtocolFilters();
+        }
+      }
+    });
+  }
+
+  // 6. Check Active User Session or Load Landing Page
+  callBackend('apiGetSessionUser', [], function(u) {
+    if (u && u.user_id) {
+      var initialHash = window.location.hash.substring(1);
+      completeSignIn(u).then(function() {
+        if (!AppState.currentUser || !initialHash) return;
+        var parts = initialHash.split('/');
+        navigateTo(parts[0], parts[1]);
+      });
+    } else {
+      // Show landing auth screen
+      var authScreen = document.getElementById('auth-screen');
+      var appLayout = document.getElementById('app-layout');
+      if (authScreen) authScreen.style.display = 'block';
+      if (appLayout) appLayout.style.display = 'none';
+    }
+  });
+});
+
+
+</script>
